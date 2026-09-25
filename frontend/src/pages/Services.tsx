@@ -1,142 +1,70 @@
-type Service = {
-  name: string
-  team: string
-  status: 'Operational' | 'Degraded' | 'Down'
-  uptime: string
-  latency: string
-}
+import { useEffect, useState } from 'react'
 
-const services: Service[] = [
-  {
-    name: 'API Gateway',
-    team: 'Platform',
-    status: 'Operational',
-    uptime: '99.99%',
-    latency: '42 ms',
-  },
-  {
-    name: 'Authentication',
-    team: 'Platform',
-    status: 'Operational',
-    uptime: '99.98%',
-    latency: '68 ms',
-  },
-  {
-    name: 'Payments API',
-    team: 'Payments',
-    status: 'Operational',
-    uptime: '99.97%',
-    latency: '91 ms',
-  },
-  {
-    name: 'Notification Worker',
-    team: 'Messaging',
-    status: 'Degraded',
-    uptime: '99.82%',
-    latency: '184 ms',
-  },
-  {
-    name: 'Web Application',
-    team: 'Frontend',
-    status: 'Operational',
-    uptime: '99.99%',
-    latency: '35 ms',
-  },
-  {
-    name: 'PostgreSQL',
-    team: 'Data',
-    status: 'Operational',
-    uptime: '100%',
-    latency: '12 ms',
-  },
-]
+import { fetchServices, type Service } from '../api'
 
 function Services() {
+  const [services, setServices] = useState<Service[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetchServices()
+      .then(setServices)
+      .catch(() => setError('Unable to load services'))
+      .finally(() => setLoading(false))
+  }, [])
+
   return (
-    <>
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold tracking-tight">Services</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Monitor the health and performance of your production services.
-        </p>
+    <section>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Services</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Monitor the health and performance of production services.
+          </p>
+        </div>
+
+        <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500">
+          Add Service
+        </button>
       </div>
 
-      <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-        <div className="border-b border-slate-800 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">Service Inventory</h3>
-              <p className="mt-1 text-xs text-slate-500">
-                {services.length} registered services
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs font-medium text-slate-200 transition hover:bg-slate-700"
-            >
-              Add Service
-            </button>
+      <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+        {loading && (
+          <div className="p-6 text-sm text-slate-400">
+            Loading services...
           </div>
-        </div>
+        )}
 
-        <div className="divide-y divide-slate-800">
-          {services.map((service) => (
-            <div
-              key={service.name}
-              className="grid gap-4 px-6 py-5 transition hover:bg-slate-800/40 md:grid-cols-[2fr_1fr_1fr_1fr]"
-            >
-              <div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`h-2.5 w-2.5 rounded-full ${
-                      service.status === 'Operational'
-                        ? 'bg-emerald-400'
-                        : service.status === 'Degraded'
-                          ? 'bg-amber-400'
-                          : 'bg-red-400'
-                    }`}
-                  />
-                  <span className="font-medium">{service.name}</span>
-                </div>
-                <div className="mt-1 pl-5 text-xs text-slate-500">
-                  {service.team} team
-                </div>
-              </div>
+        {error && (
+          <div className="p-6 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
-              <div>
-                <div className="text-xs text-slate-500">Status</div>
-                <div
-                  className={`mt-1 text-sm ${
-                    service.status === 'Operational'
-                      ? 'text-emerald-400'
-                      : service.status === 'Degraded'
-                        ? 'text-amber-400'
-                        : 'text-red-400'
-                  }`}
-                >
+        {!loading && !error && (
+          <div className="divide-y divide-slate-800">
+            {services.map((service) => (
+              <div
+                key={service.id}
+                className="flex items-center justify-between p-5"
+              >
+                <div>
+                  <h3 className="font-medium text-white">{service.name}</h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {service.team}
+                  </p>
+                </div>
+
+                <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400">
                   {service.status}
-                </div>
+                </span>
               </div>
-
-              <div>
-                <div className="text-xs text-slate-500">Uptime</div>
-                <div className="mt-1 text-sm text-slate-200">
-                  {service.uptime}
-                </div>
-              </div>
-
-              <div>
-                <div className="text-xs text-slate-500">Latency</div>
-                <div className="mt-1 text-sm text-slate-200">
-                  {service.latency}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
