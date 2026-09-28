@@ -4,17 +4,18 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.service import Service
+from app.schemas.service import ServiceResponse
 
 
 router = APIRouter(prefix="/services", tags=["Services"])
 
 
-@router.get("/")
+@router.get("/", response_model=list[ServiceResponse])
 def list_services(db: Session = Depends(get_db)):
     return db.scalars(select(Service)).all()
 
 
-@router.post("/")
+@router.post("/", response_model=ServiceResponse)
 def create_service(
     name: str,
     team: str,
