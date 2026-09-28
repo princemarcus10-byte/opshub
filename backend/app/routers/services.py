@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.audit_event import AuditEvent
 from app.models.service import Service
 from app.schemas.service import ServiceResponse
 
@@ -29,5 +30,15 @@ def create_service(
     db.add(service)
     db.commit()
     db.refresh(service)
+
+    audit_event = AuditEvent(
+        action="Created service",
+        resource=service.name,
+        actor="Markus",
+        category="Service",
+    )
+
+    db.add(audit_event)
+    db.commit()
 
     return service

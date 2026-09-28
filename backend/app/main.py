@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routers.services import router as services_router
 from app.routers.incidents import router as incidents_router
 from app.routers.deployments import router as deployments_router
+from app.routers.audit_events import router as audit_events_router
 from app.database import get_db
 from app.models.incident import Incident
 from app.models.service import Service
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(services_router)
 app.include_router(incidents_router)
 app.include_router(deployments_router)
+app.include_router(audit_events_router)
 
 @app.get("/health")
 def health_check():

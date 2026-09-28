@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.audit_event import AuditEvent
 from app.models.deployment import Deployment
 from app.schemas.deployment import DeploymentResponse
 
@@ -35,5 +36,15 @@ def create_deployment(
     db.add(deployment)
     db.commit()
     db.refresh(deployment)
+
+    audit_event = AuditEvent(
+        action="Deployed",
+        resource=f"{deployment.service} {deployment.version}",
+        actor="Markus",
+        category="Deployment",
+    )
+
+    db.add(audit_event)
+    db.commit()
 
     return deployment

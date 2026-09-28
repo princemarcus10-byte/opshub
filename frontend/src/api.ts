@@ -151,3 +151,17 @@ export async function createDeployment(
 
   return response.json()
 }
+
+export type AuditEvent = {
+  id: number
+  action: string
+  resource: string
+  actor: string
+  category: string
+}
+
+export async function fetchAuditEvents(): Promise<AuditEvent[]> {
+  const response = await fetch(`${API_BASE_URL}/audit-events/`)
+  if (!response.ok) throw new Error('Failed to fetch audit events')
+  return response.json()
+}

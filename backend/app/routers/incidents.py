@@ -3,6 +3,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.audit_event import AuditEvent
 from app.models.incident import Incident
 from app.schemas.incident import IncidentResponse
 
@@ -32,8 +33,19 @@ def create_incident(
     db.commit()
     db.refresh(incident)
 
+    audit_event = AuditEvent(
+        action="Created incident",
+        resource=incident.title,
+        actor="Markus",
+        category="Incident",
+    )
+
+    db.add(audit_event)
+    db.commit()
+
     return incident
-    
+
+
 @router.patch("/{incident_id}", response_model=IncidentResponse)
 def update_incident(
     incident_id: int,
@@ -45,9 +57,20 @@ def update_incident(
     if incident is None:
         raise HTTPException(status_code=404, detail="Incident not found")
 
+    previous_status = incident.status
     incident.status = status
 
     db.commit()
     db.refresh(incident)
+
+    audit_event = AuditEvent(
+        action="Updated incident",
+        resource=f"{incident.title}: {previous_status} -> {incident.status}",
+        actor="Markus",
+        category="Incident",
+    )
+
+    db.add(audit_event)
+    db.commit()
 
     return incident
