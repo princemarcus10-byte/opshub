@@ -16,3 +16,21 @@ export async function fetchServices(): Promise<Service[]> {
 
   return response.json()
 }
+
+export async function createService(
+  name: string,
+  team: string,
+): Promise<Service> {
+  const response = await fetch(
+    `${API_BASE_URL}/services/?name=${encodeURIComponent(name)}&team=${encodeURIComponent(team)}`,
+    {
+      method: 'POST',
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to create service')
+  }
+
+  return response.json()
+}
