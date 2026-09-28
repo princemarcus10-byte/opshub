@@ -109,3 +109,45 @@ export async function fetchDashboardSummary(): Promise<DashboardSummary> {
 
   return response.json()
 }
+
+export type Deployment = {
+  id: number
+  service: string
+  version: string
+  environment: string
+  status: string
+}
+
+export async function fetchDeployments(): Promise<Deployment[]> {
+  const response = await fetch(`${API_BASE_URL}/deployments/`)
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch deployments')
+  }
+
+  return response.json()
+}
+
+export async function createDeployment(
+  service: string,
+  version: string,
+  environment: string,
+  status: string,
+): Promise<Deployment> {
+  const params = new URLSearchParams({
+    service,
+    version,
+    environment,
+    status,
+  })
+
+  const response = await fetch(`${API_BASE_URL}/deployments/?${params}`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to create deployment')
+  }
+
+  return response.json()
+}

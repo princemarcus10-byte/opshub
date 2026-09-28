@@ -1,135 +1,208 @@
-type Deployment = {
-  id: string
-  service: string
-  version: string
-  environment: string
-  status: 'Successful' | 'Failed' | 'In Progress'
-  deployedBy: string
-  deployedAt: string
-}
+import { useEffect, useState } from 'react'
 
-const deployments: Deployment[] = [
-  {
-    id: 'DEP-2084',
-    service: 'Web Application',
-    version: 'v2.14.0',
-    environment: 'Production',
-    status: 'Successful',
-    deployedBy: 'CI Pipeline',
-    deployedAt: '12 minutes ago',
-  },
-  {
-    id: 'DEP-2083',
-    service: 'API Gateway',
-    version: 'v1.18.3',
-    environment: 'Production',
-    status: 'Successful',
-    deployedBy: 'CI Pipeline',
-    deployedAt: '48 minutes ago',
-  },
-  {
-    id: 'DEP-2082',
-    service: 'Notification Worker',
-    version: 'v3.7.1',
-    environment: 'Production',
-    status: 'In Progress',
-    deployedBy: 'Marcus',
-    deployedAt: '1 hour ago',
-  },
-  {
-    id: 'DEP-2081',
-    service: 'Payments API',
-    version: 'v5.2.0',
-    environment: 'Production',
-    status: 'Failed',
-    deployedBy: 'CI Pipeline',
-    deployedAt: '3 hours ago',
-  },
-]
+import {
+  createDeployment,
+  fetchDeployments,
+  type Deployment,
+} from '../api'
 
 function Deployments() {
-  return (
-    <>
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold tracking-tight">Deployments</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Track application releases and deployment activity across environments.
-        </p>
-      </div>
+  const [deployments, setDeployments] = useState<Deployment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-      <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-        <div className="border-b border-slate-800 px-6 py-4">
-          <div>
-            <h3 className="font-semibold">Deployment History</h3>
-            <p className="mt-1 text-xs text-slate-500">
-              Recent application releases
-            </p>
-          </div>
+  const [showForm, setShowForm] = useState(false)
+  const [service, setService] = useState('')
+  const [version, setVersion] = useState('')
+  const [environment, setEnvironment] = useState('Production')
+  const [status, setStatus] = useState('Successful')
+  const [creating, setCreating] = useState(false)
+
+  useEffect(() => {
+    fetchDeployments()
+      .then(setDeployments)
+      .catch(() => setError('Unable to load deployments'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleCreateDeployment(event: React.FormEvent) {
+    event.preventDefault()
+
+    if (!service.trim() || !version.trim()) {
+      return
+    }
+
+    setCreating(true)
+    setError('')
+
+    try {
+      const deployment = await createDeployment(
+        service.trim(),
+        version.trim(),
+        environment,
+        status,
+      )
+
+      setDeployments((current) => [deployment, ...current])
+      setService('')
+      setVersion('')
+      setEnvironment('Production')
+      setStatus('Successful')
+      setShowForm(false)
+    } catch {
+      setError('Unable to create deployment')
+    } finally {
+      setCreating(false)
+    }
+  }
+
+  return (
+    <section>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Deployments</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Track application releases across environments.
+          </p>
         </div>
 
-        <div className="divide-y divide-slate-800">
-          {deployments.map((deployment) => (
-            <div
-              key={deployment.id}
-              className="px-6 py-5 transition hover:bg-slate-800/40"
+        <button
+          onClick={() => setShowForm((current) => !current)}
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+        >
+          {showForm ? 'Cancel' : 'Create Deployment'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleCreateDeployment}
+          className="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-6"
+        >
+          <h3 className="text-lg font-semibold text-white">
+            Create Deployment
+          </h3>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Service
+              </label>
+              <input
+                value={service}
+                onChange={(event) => setService(event.target.value)}
+                placeholder="e.g. API Gateway"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Version
+              </label>
+              <input
+                value={version}
+                onChange={(event) => setVersion(event.target.value)}
+                placeholder="e.g. v1.2.0"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Environment
+              </label>
+              <select
+                value={environment}
+                onChange={(event) => setEnvironment(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+              >
+                <option>Production</option>
+                <option>Staging</option>
+                <option>Development</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Status
+              </label>
+              <select
+                value={status}
+                onChange={(event) => setStatus(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+              >
+                <option>Successful</option>
+                <option>Failed</option>
+                <option>In Progress</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="submit"
+              disabled={creating}
+              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="flex min-w-0 items-start gap-4">
-                  <div
-                    className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-                      deployment.status === 'Successful'
-                        ? 'bg-emerald-500/10 text-emerald-400'
-                        : deployment.status === 'Failed'
-                          ? 'bg-red-500/10 text-red-400'
-                          : 'bg-amber-500/10 text-amber-400'
-                    }`}
-                  >
-                    {deployment.status === 'Successful'
-                      ? '✓'
-                      : deployment.status === 'Failed'
-                        ? '!'
-                        : '↻'}
-                  </div>
+              {creating ? 'Creating...' : 'Create Deployment'}
+            </button>
+          </div>
+        </form>
+      )}
 
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-3">
-                      <span className="font-mono text-xs text-slate-500">
-                        {deployment.id}
-                      </span>
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-900 bg-red-950/40 p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
 
-                      <span className="rounded-full border border-slate-700 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-400">
-                        {deployment.environment}
-                      </span>
-                    </div>
+      <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+        {loading && (
+          <div className="p-6 text-sm text-slate-400">
+            Loading deployments...
+          </div>
+        )}
 
-                    <h3 className="mt-2 font-medium text-slate-100">
-                      {deployment.service}
-                    </h3>
+        {!loading && deployments.length === 0 && (
+          <div className="p-6 text-sm text-slate-400">
+            No deployments recorded.
+          </div>
+        )}
 
-                    <p className="mt-1 text-xs text-slate-500">
-                      {deployment.version} · {deployment.deployedBy} ·{' '}
-                      {deployment.deployedAt}
-                    </p>
-                  </div>
+        {!loading && deployments.length > 0 && (
+          <div className="divide-y divide-slate-800">
+            {deployments.map((deployment) => (
+              <div
+                key={deployment.id}
+                className="flex items-center justify-between gap-6 p-5"
+              >
+                <div className="min-w-0">
+                  <h3 className="font-medium text-white">
+                    {deployment.service}
+                  </h3>
+                  <p className="mt-1 text-sm text-slate-400">
+                    {deployment.version} · {deployment.environment}
+                  </p>
                 </div>
 
                 <span
-                  className={`text-xs font-medium ${
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
                     deployment.status === 'Successful'
-                      ? 'text-emerald-400'
+                      ? 'bg-emerald-500/10 text-emerald-400'
                       : deployment.status === 'Failed'
-                        ? 'text-red-400'
-                        : 'text-amber-400'
+                        ? 'bg-red-500/10 text-red-400'
+                        : 'bg-amber-500/10 text-amber-400'
                   }`}
                 >
                   {deployment.status}
                 </span>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 
