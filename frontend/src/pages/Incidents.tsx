@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import {
   createIncident,
   fetchIncidents,
+  updateIncidentStatus,
   type Incident,
 } from '../api'
 
@@ -174,9 +175,31 @@ function Incidents() {
                     {incident.severity}
                   </span>
 
-                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
-                    {incident.status}
-                  </span>
+                 <select
+  value={incident.status}
+  onChange={async (event) => {
+    try {
+      const updatedIncident = await updateIncidentStatus(
+        incident.id,
+        event.target.value,
+      )
+
+      setIncidents((current) =>
+        current.map((item) =>
+          item.id === updatedIncident.id ? updatedIncident : item,
+        ),
+      )
+    } catch {
+      setError('Unable to update incident status')
+    }
+  }}
+  className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-blue-500"
+>
+  <option>Investigating</option>
+  <option>Identified</option>
+  <option>Monitoring</option>
+  <option>Resolved</option>
+</select>
                 </div>
               </div>
             ))}

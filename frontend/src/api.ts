@@ -74,3 +74,23 @@ export async function createIncident(
 
   return response.json()
 }
+
+export async function updateIncidentStatus(
+  incidentId: number,
+  status: string,
+): Promise<Incident> {
+  const params = new URLSearchParams({ status })
+
+  const response = await fetch(
+    `${API_BASE_URL}/incidents/${incidentId}?${params}`,
+    {
+      method: 'PATCH',
+    },
+  )
+
+  if (!response.ok) {
+    throw new Error('Failed to update incident')
+  }
+
+  return response.json()
+}
