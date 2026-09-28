@@ -1,134 +1,189 @@
-type Incident = {
-  id: string
-  title: string
-  service: string
-  severity: 'Critical' | 'High' | 'Medium' | 'Low'
-  status: 'Investigating' | 'Identified' | 'Monitoring' | 'Resolved'
-  started: string
-}
+import { useEffect, useState } from 'react'
 
-const incidents: Incident[] = [
-  {
-    id: 'INC-1042',
-    title: 'Notification delivery delays',
-    service: 'Notification Worker',
-    severity: 'Medium',
-    status: 'Monitoring',
-    started: '18 minutes ago',
-  },
-  {
-    id: 'INC-1041',
-    title: 'Elevated API latency',
-    service: 'API Gateway',
-    severity: 'High',
-    status: 'Resolved',
-    started: '2 hours ago',
-  },
-  {
-    id: 'INC-1040',
-    title: 'Database connection pool exhaustion',
-    service: 'PostgreSQL',
-    severity: 'Critical',
-    status: 'Resolved',
-    started: 'Yesterday',
-  },
-]
+import {
+  createIncident,
+  fetchIncidents,
+  type Incident,
+} from '../api'
 
 function Incidents() {
+  const [incidents, setIncidents] = useState<Incident[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const [showForm, setShowForm] = useState(false)
+  const [title, setTitle] = useState('')
+  const [service, setService] = useState('')
+  const [severity, setSeverity] = useState('Medium')
+  const [creating, setCreating] = useState(false)
+
+  useEffect(() => {
+    fetchIncidents()
+      .then(setIncidents)
+      .catch(() => setError('Unable to load incidents'))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleCreateIncident(event: React.FormEvent) {
+    event.preventDefault()
+
+    if (!title.trim() || !service.trim()) {
+      return
+    }
+
+    setCreating(true)
+    setError('')
+
+    try {
+      const incident = await createIncident(
+        title.trim(),
+        service.trim(),
+        severity,
+      )
+
+      setIncidents((current) => [incident, ...current])
+      setTitle('')
+      setService('')
+      setSeverity('Medium')
+      setShowForm(false)
+    } catch {
+      setError('Unable to create incident')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   return (
-    <>
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold tracking-tight">Incidents</h2>
-        <p className="mt-1 text-sm text-slate-400">
-          Investigate and track production incidents across your services.
-        </p>
-      </div>
-
-      <section className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
-        <div className="border-b border-slate-800 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-semibold">Incident History</h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Recent production incidents
-              </p>
-            </div>
-
-            <button
-              type="button"
-              className="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-900 transition hover:bg-white"
-            >
-              Create Incident
-            </button>
-          </div>
+    <section>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-semibold text-white">Incidents</h2>
+          <p className="mt-1 text-sm text-slate-400">
+            Track and manage production incidents.
+          </p>
         </div>
 
-        <div className="divide-y divide-slate-800">
-          {incidents.map((incident) => (
-            <div
-              key={incident.id}
-              className="px-6 py-5 transition hover:bg-slate-800/40"
+        <button
+          onClick={() => setShowForm((current) => !current)}
+          className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500"
+        >
+          {showForm ? 'Cancel' : 'Create Incident'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form
+          onSubmit={handleCreateIncident}
+          className="mb-6 rounded-xl border border-slate-800 bg-slate-900 p-6"
+        >
+          <h3 className="text-lg font-semibold text-white">
+            Create Incident
+          </h3>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-2">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Incident title
+              </label>
+              <input
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
+                placeholder="e.g. Elevated API latency"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Severity
+              </label>
+              <select
+                value={severity}
+                onChange={(event) => setSeverity(event.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none focus:border-blue-500"
+              >
+                <option>Critical</option>
+                <option>High</option>
+                <option>Medium</option>
+                <option>Low</option>
+              </select>
+            </div>
+
+            <div className="sm:col-span-3">
+              <label className="mb-2 block text-sm font-medium text-slate-300">
+                Affected service
+              </label>
+              <input
+                value={service}
+                onChange={(event) => setService(event.target.value)}
+                placeholder="e.g. API Gateway"
+                className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-white outline-none placeholder:text-slate-600 focus:border-blue-500"
+              />
+            </div>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="submit"
+              disabled={creating}
+              className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              {creating ? 'Creating...' : 'Create Incident'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {error && (
+        <div className="mb-6 rounded-lg border border-red-900 bg-red-950/40 p-4 text-sm text-red-400">
+          {error}
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-slate-800 bg-slate-900">
+        {loading && (
+          <div className="p-6 text-sm text-slate-400">
+            Loading incidents...
+          </div>
+        )}
+
+        {!loading && incidents.length === 0 && (
+          <div className="p-6 text-sm text-slate-400">
+            No incidents recorded.
+          </div>
+        )}
+
+        {!loading && incidents.length > 0 && (
+          <div className="divide-y divide-slate-800">
+            {incidents.map((incident) => (
+              <div
+                key={incident.id}
+                className="flex items-center justify-between gap-6 p-5"
+              >
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="font-mono text-xs text-slate-500">
-                      {incident.id}
-                    </span>
-
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
-                        incident.severity === 'Critical'
-                          ? 'border-red-500/30 bg-red-500/10 text-red-400'
-                          : incident.severity === 'High'
-                            ? 'border-orange-500/30 bg-orange-500/10 text-orange-400'
-                            : incident.severity === 'Medium'
-                              ? 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-                              : 'border-slate-700 bg-slate-800 text-slate-400'
-                      }`}
-                    >
-                      {incident.severity}
-                    </span>
-
-                    <span className="text-xs text-slate-500">
-                      {incident.started}
-                    </span>
-                  </div>
-
-                  <h3 className="mt-2 truncate font-medium text-slate-100">
+                  <h3 className="font-medium text-white">
                     {incident.title}
                   </h3>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    Affected service: {incident.service}
+                  <p className="mt-1 text-sm text-slate-400">
+                    {incident.service}
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`flex items-center gap-2 text-xs ${
-                      incident.status === 'Resolved'
-                        ? 'text-emerald-400'
-                        : 'text-amber-400'
-                    }`}
-                  >
-                    <span className="h-2 w-2 rounded-full bg-current" />
-                    {incident.status}
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-medium text-amber-400">
+                    {incident.severity}
                   </span>
 
-                  <button
-                    type="button"
-                    className="rounded-lg border border-slate-700 px-3 py-2 text-xs text-slate-300 transition hover:bg-slate-800"
-                  >
-                    View
-                  </button>
+                  <span className="rounded-full bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-400">
+                    {incident.status}
+                  </span>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>
-    </>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
   )
 }
 

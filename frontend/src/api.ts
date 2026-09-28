@@ -34,3 +34,43 @@ export async function createService(
 
   return response.json()
 }
+
+export type Incident = {
+  id: number
+  title: string
+  service: string
+  severity: string
+  status: string
+}
+
+export async function fetchIncidents(): Promise<Incident[]> {
+  const response = await fetch(`${API_BASE_URL}/incidents/`)
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch incidents')
+  }
+
+  return response.json()
+}
+
+export async function createIncident(
+  title: string,
+  service: string,
+  severity: string,
+): Promise<Incident> {
+  const params = new URLSearchParams({
+    title,
+    service,
+    severity,
+  })
+
+  const response = await fetch(`${API_BASE_URL}/incidents/?${params}`, {
+    method: 'POST',
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to create incident')
+  }
+
+  return response.json()
+}
