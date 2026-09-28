@@ -1,9 +1,13 @@
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers.services import router as services_router
 from app.routers.incidents import router as incidents_router
-
+from app.database import get_db
+from app.models.incident import Incident
+from app.models.service import Service
 
 app = FastAPI(
     title="OpsHub API",
@@ -30,4 +34,22 @@ def health_check():
     return {
         "status": "healthy",
         "application": "OpsHub API",
+    }
+    
+@app.get("/dashboard/summary")
+def dashboard_summary(db: Session = Depends(get_db)):
+    service_count = db.scalar(select(func.count(Service.id))) or 0
+
+    active_incident_count = (
+        db.scalar(
+            select(func.count(Incident.id)).where(
+                Incident.status != "Resolved"
+            )
+        )
+        or 0
+    )
+
+    return {
+        "services": service_count,
+        "active_incidents": active_incident_count,
     }

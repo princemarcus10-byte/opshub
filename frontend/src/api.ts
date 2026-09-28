@@ -94,3 +94,18 @@ export async function updateIncidentStatus(
 
   return response.json()
 }
+
+export type DashboardSummary = {
+  services: number
+  active_incidents: number
+}
+
+export async function fetchDashboardSummary(): Promise<DashboardSummary> {
+  const response = await fetch(`${API_BASE_URL}/dashboard/summary`)
+
+  if (!response.ok) {
+    throw new Error('Failed to fetch dashboard summary')
+  }
+
+  return response.json()
+}
